@@ -190,7 +190,7 @@ actor SonarrAPIService {
         let (allData, allResponse) = try await URLSession.shared.data(for: allRequest)
 
         guard let http = allResponse as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-              var seriesList = try? JSONSerialization.jsonObject(with: allData) as? [[String: Any]],
+              let seriesList = try? JSONSerialization.jsonObject(with: allData) as? [[String: Any]],
               let existing = seriesList.first(where: { ($0["tvdbId"] as? Int) == tvdbId }),
               let seriesId = existing["id"] as? Int else {
             throw APIError.serverError(404, "Could not find existing series to update.")
