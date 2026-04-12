@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject var viewModel: CalendarViewModel
     @State private var showSettings = false
     @State private var showAddShow = false
+    @State private var showLibrary = false
 
     var body: some View {
         NavigationStack {
@@ -36,6 +37,9 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $showAddShow) {
                 AddShowView()
             }
+            .fullScreenCover(isPresented: $showLibrary) {
+                LibraryView()
+            }
         }
     }
 
@@ -65,6 +69,11 @@ struct ContentView: View {
                 Task { await viewModel.fetchEvents() }
             }) {
                 Image(systemName: "arrow.clockwise")
+                    .font(.title3)
+            }
+
+            Button(action: { showLibrary = true }) {
+                Image(systemName: "list.bullet")
                     .font(.title3)
             }
 

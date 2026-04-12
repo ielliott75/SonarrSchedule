@@ -53,7 +53,8 @@ struct AddShowView: View {
                 qualityProfiles: viewModel.qualityProfiles,
                 isAdding: viewModel.isAdding,
                 addError: viewModel.addError,
-                addSuccess: viewModel.addSuccess
+                addSuccess: viewModel.addSuccess,
+                showUpdatePrompt: viewModel.showUpdatePrompt
             ) { rootFolderPath, qualityProfileId, monitor, searchForMissing in
                 await viewModel.addShow(
                     show,
@@ -61,6 +62,15 @@ struct AddShowView: View {
                     qualityProfileId: qualityProfileId,
                     monitor: monitor,
                     searchForMissingEpisodes: searchForMissing,
+                    ip: calendarViewModel.ipAddress,
+                    port: calendarViewModel.port,
+                    apiKey: calendarViewModel.apiKey
+                )
+            } onUpdate: { qualityProfileId, monitor in
+                await viewModel.updateShow(
+                    show,
+                    qualityProfileId: qualityProfileId,
+                    monitor: monitor,
                     ip: calendarViewModel.ipAddress,
                     port: calendarViewModel.port,
                     apiKey: calendarViewModel.apiKey
@@ -105,7 +115,8 @@ struct AddShowView: View {
     private var searchBar: some View {
         HStack(spacing: 16) {
             TextField("Search by show name...", text: $viewModel.searchQuery)
-                .font(.title3)
+                .font(.callout)
+                .foregroundColor(.gray)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
                 .onSubmit {
@@ -264,11 +275,13 @@ struct AddShowConfirmView: View {
     let isAdding: Bool
     let addError: String?
     let addSuccess: Bool
+    let showUpdatePrompt: Bool
     let onAdd: (String, Int, MonitorOption, Bool) async -> Void
+    let onUpdate: (Int, MonitorOption) async -> Void
     let onDismiss: () -> Void
 
     @State private var selectedQualityProfileIndex = 0
-    @State private var selectedMonitor: MonitorOption = .all
+    @State private var selectedMonitor: MonitorOption = .latestSeason
     @State private var searchForMissing = false
     @State private var showQualityPicker = false
     @State private var showMonitorPicker = false
@@ -338,6 +351,7 @@ struct AddShowConfirmView: View {
 
                     Toggle("Search for Missing Episodes", isOn: $searchForMissing)
                         .tint(.blue)
+                        .foregroundStyle(.primary)
                         .disabled(isAdding)
                 }
 
@@ -347,19 +361,43 @@ struct AddShowConfirmView: View {
                             .foregroundColor(.red)
                     }
 
-                    Button {
-                        Task { await onAdd(selectedRootFolderPath, selectedQualityProfileId, selectedMonitor, searchForMissing) }
-                    } label: {
-                        if isAdding {
-                            ProgressView()
-                        } else {
-                            Label("Add to Sonarr", systemImage: "plus.circle.fill")
-                        }
-                    }
-                    .disabled(isAdding)
+                    if showUpdatePrompt {
+                        Text("\(show.title) is already in your library. Update its configuration with the selected options?")
+                            .foregroundStyle(.primary)
+                            .font(.callout)
 
-                    Button("Cancel", action: onDismiss)
+                        Button {
+                            Task { await onUpdate(selectedQualityProfileId, selectedMonitor) }
+                        } label: {
+                            if isAdding {
+                                ProgressView()
+                            } else {
+                                Label("Update Configuration", systemImage: "arrow.triangle.2.circlepath")
+                                    .foregroundStyle(.primary)
+                            }
+                        }
                         .disabled(isAdding)
+
+                        Button("Cancel", action: onDismiss)
+                            .foregroundStyle(.primary)
+                            .disabled(isAdding)
+                    } else {
+                        Button {
+                            Task { await onAdd(selectedRootFolderPath, selectedQualityProfileId, selectedMonitor, searchForMissing) }
+                        } label: {
+                            if isAdding {
+                                ProgressView()
+                            } else {
+                                Label("Add to Sonarr", systemImage: "plus.circle.fill")
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                        .disabled(isAdding)
+
+                        Button("Cancel", action: onDismiss)
+                            .foregroundStyle(.primary)
+                            .disabled(isAdding)
+                    }
                 }
             }
             .listStyle(.grouped)
@@ -383,9 +421,10 @@ struct AddShowConfirmView: View {
     private func listOptionRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
+                .foregroundStyle(.primary)
             Spacer()
-            Text(value).foregroundColor(.gray)
-            Image(systemName: "chevron.right").font(.caption).foregroundColor(.gray)
+            Text(value).foregroundStyle(.secondary)
+            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -409,10 +448,11 @@ struct QualityProfilePickerView: View {
                 } label: {
                     HStack {
                         Text(profiles[i].name)
+                            .foregroundStyle(.primary)
                         Spacer()
                         if selectedIndex == i {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(.primary)
                         }
                     }
                 }
@@ -443,10 +483,11 @@ struct MonitorPickerView: View {
                 } label: {
                     HStack {
                         Text(option.displayName)
+                            .foregroundStyle(.primary)
                         Spacer()
                         if selection == option {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(.primary)
                         }
                     }
                 }

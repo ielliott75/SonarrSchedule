@@ -3,6 +3,7 @@ import SwiftUI
 struct CalendarGridView: View {
     @EnvironmentObject var viewModel: CalendarViewModel
     @State private var selectedEvent: CalendarEvent?
+    @Namespace private var focusNamespace
 
     var body: some View {
         ScrollView(.vertical) {
@@ -13,6 +14,7 @@ struct CalendarGridView: View {
             .padding(.horizontal, 60)
             .padding(.bottom, 60)
         }
+        .focusScope(focusNamespace)
         .sheet(item: $selectedEvent) { event in
             EventDetailView(event: event)
         }
@@ -26,15 +28,16 @@ struct CalendarGridView: View {
                 .foregroundColor(.gray)
 
             HStack(alignment: .top, spacing: 30) {
-                ForEach(days, id: \.self) { date in
+                ForEach(Array(days.enumerated()), id: \.element) { index, date in
                     DayColumnView(
                         date: date,
                         events: viewModel.events(for: date),
                         selectedEvent: $selectedEvent
                     )
-                    .focusSection()
+                    .prefersDefaultFocus(index == 0, in: focusNamespace)
                 }
             }
+            .focusSection()
         }
     }
 }

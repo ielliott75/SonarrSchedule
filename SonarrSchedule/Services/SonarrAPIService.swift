@@ -63,6 +63,11 @@ actor SonarrAPIService {
         }
     }
 
+    func fetchAllSeries(ip: String, port: String, apiKey: String) async throws -> [LibrarySeries] {
+        let request = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series")
+        return try await performRequest(request)
+    }
+
     func searchSeries(ip: String, port: String, apiKey: String, term: String) async throws -> [SeriesSearchResult] {
         let encoded = term.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? term
         let request = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series/lookup?term=\(encoded)")
@@ -79,6 +84,11 @@ actor SonarrAPIService {
         return try await performRequest(request)
     }
 
+    func fetchLanguageProfiles(ip: String, port: String, apiKey: String) async throws -> [LanguageProfile] {
+        let request = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "languageprofile")
+        return try await performRequest(request)
+    }
+
     func addSeries(
         ip: String,
         port: String,
@@ -86,6 +96,7 @@ actor SonarrAPIService {
         series: SeriesSearchResult,
         rootFolderPath: String,
         qualityProfileId: Int,
+        languageProfileId: Int,
         monitor: MonitorOption,
         searchForMissingEpisodes: Bool
     ) async throws {
@@ -97,10 +108,11 @@ actor SonarrAPIService {
             title: series.title,
             tvdbId: series.tvdbId,
             qualityProfileId: qualityProfileId,
+            languageProfileId: languageProfileId,
             rootFolderPath: rootFolderPath,
             monitored: true,
             titleSlug: series.titleSlug,
-            seasons: [],
+            seasons: series.seasons ?? [],
             addOptions: AddSeriesRequest.AddOptions(
                 monitor: monitor.rawValue,
                 searchForMissingEpisodes: searchForMissingEpisodes
@@ -118,11 +130,114 @@ actor SonarrAPIService {
         }
 
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            let body = String(data: data, encoding: .utf8)
-            if http.statusCode == 400, let body, body.lowercased().contains("already") {
+            let responseBody = String(data: data, encoding: .utf8)
+            if http.statusCode == 400, let responseBody, responseBody.lowercased().contains("already") {
                 throw APIError.alreadyExists
             }
-            throw APIError.serverError(http.statusCode, body)
+            // Extract the most useful part of Sonarr's validation error
+            if let responseBody, let errorMessage = extractSonarrError(from: responseBody) {
+                throw APIError.serverError(http.statusCode, errorMessage)
+            }
+            throw APIError.serverError(http.statusCode, responseBody)
         }
+    }
+
+    func updateSeriesById(
+        ip: String,
+        port: String,
+        apiKey: String,
+        seriesId: Int,
+        qualityProfileId: Int,
+        monitored: Bool
+    ) async throws {
+        // GET the full current series object
+        let getRequest = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series/\(seriesId)")
+        let (getData, getResponse) = try await URLSession.shared.data(for: getRequest)
+
+        guard let http = getResponse as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+              var series = try? JSONSerialization.jsonObject(with: getData) as? [String: Any] else {
+            throw APIError.serverError(404, "Could not fetch series to update.")
+        }
+
+        series["qualityProfileId"] = qualityProfileId
+        series["monitored"] = monitored
+
+        let putData = try JSONSerialization.data(withJSONObject: series)
+        var putRequest = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series/\(seriesId)")
+        putRequest.httpMethod = "PUT"
+        putRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        putRequest.httpBody = putData
+
+        let (responseData, putResponse) = try await URLSession.shared.data(for: putRequest)
+        if let http = putResponse as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            let body = String(data: responseData, encoding: .utf8)
+            if let body, let msg = extractSonarrError(from: body) { throw APIError.serverError(http.statusCode, msg) }
+            throw APIError.serverError(http.statusCode, String(data: responseData, encoding: .utf8))
+        }
+    }
+
+    func updateSeries(
+        ip: String,
+        port: String,
+        apiKey: String,
+        tvdbId: Int,
+        qualityProfileId: Int,
+        languageProfileId: Int,
+        monitor: MonitorOption
+    ) async throws {
+        // Fetch all series and find the matching one by tvdbId
+        let allRequest = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series")
+        let (allData, allResponse) = try await URLSession.shared.data(for: allRequest)
+
+        guard let http = allResponse as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+              var seriesList = try? JSONSerialization.jsonObject(with: allData) as? [[String: Any]],
+              let existing = seriesList.first(where: { ($0["tvdbId"] as? Int) == tvdbId }),
+              let seriesId = existing["id"] as? Int else {
+            throw APIError.serverError(404, "Could not find existing series to update.")
+        }
+
+        // Patch the fields we care about
+        var updated = existing
+        updated["qualityProfileId"] = qualityProfileId
+        updated["languageProfileId"] = languageProfileId
+        updated["monitored"] = true
+
+        // Update monitor type on each season based on the monitor option
+        if var seasons = updated["seasons"] as? [[String: Any]] {
+            for i in seasons.indices {
+                seasons[i]["monitored"] = (monitor != .none)
+            }
+            updated["seasons"] = seasons
+        }
+
+        let putData = try JSONSerialization.data(withJSONObject: updated)
+
+        var putRequest = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series/\(seriesId)")
+        putRequest.httpMethod = "PUT"
+        putRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        putRequest.httpBody = putData
+
+        let (responseData, putResponse) = try await URLSession.shared.data(for: putRequest)
+
+        if let http = putResponse as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            let body = String(data: responseData, encoding: .utf8)
+            if let body, let errorMessage = extractSonarrError(from: body) {
+                throw APIError.serverError(http.statusCode, errorMessage)
+            }
+            throw APIError.serverError(http.statusCode, String(data: responseData, encoding: .utf8))
+        }
+    }
+
+    private func extractSonarrError(from body: String) -> String? {
+        guard let data = body.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        // Sonarr v4 wraps errors in { "message": "...", "description": "..." }
+        if let message = json["message"] as? String {
+            if let description = json["description"] as? String {
+                return "\(message): \(description)"
+            }
+            return message
+        }
+        return nil
     }
 }

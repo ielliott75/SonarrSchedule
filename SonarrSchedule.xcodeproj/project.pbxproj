@@ -22,6 +22,9 @@
 		AA00000D /* SonarrAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000D /* SonarrAPIService.swift */; };
 		AA00000E /* AddShowViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000E /* AddShowViewModel.swift */; };
 		AA00000F /* AddShowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA10000F /* AddShowView.swift */; };
+		AA000011 /* LibraryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* LibraryViewModel.swift */; };
+		AA000012 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100012 /* LibraryView.swift */; };
+		AA000013 /* ShowSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* ShowSummaryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +43,9 @@
 		AA10000D /* SonarrAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SonarrAPIService.swift; sourceTree = "<group>"; };
 		AA10000E /* AddShowViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddShowViewModel.swift; sourceTree = "<group>"; };
 		AA10000F /* AddShowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddShowView.swift; sourceTree = "<group>"; };
+		AA100011 /* LibraryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModel.swift; sourceTree = "<group>"; };
+		AA100012 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		AA100013 /* ShowSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowSummaryView.swift; sourceTree = "<group>"; };
 		AA200001 /* SonarrSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SonarrSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -99,6 +105,7 @@
 			children = (
 				AA100006 /* CalendarViewModel.swift */,
 				AA10000E /* AddShowViewModel.swift */,
+				AA100011 /* LibraryViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -112,6 +119,8 @@
 				AA100009 /* EventDetailView.swift */,
 				AA10000A /* SettingsView.swift */,
 				AA10000F /* AddShowView.swift */,
+				AA100012 /* LibraryView.swift */,
+				AA100013 /* ShowSummaryView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -207,6 +216,9 @@
 				AA00000D /* SonarrAPIService.swift in Sources */,
 				AA00000E /* AddShowViewModel.swift in Sources */,
 				AA00000F /* AddShowView.swift in Sources */,
+				AA000011 /* LibraryViewModel.swift in Sources */,
+				AA000012 /* LibraryView.swift in Sources */,
+				AA000013 /* ShowSummaryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
