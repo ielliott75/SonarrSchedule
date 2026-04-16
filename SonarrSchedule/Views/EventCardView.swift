@@ -6,7 +6,7 @@ struct EventCardView: View {
     @Environment(\.isFocused) private var isFocused
 
     private var statusColor: Color {
-        event.isConfirmed ? .green : .orange
+        event.isConfirmed ? .green : .red
     }
 
     var body: some View {
@@ -60,7 +60,7 @@ struct EventCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.1))
+                    .fill(statusColor.opacity(0.3))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)

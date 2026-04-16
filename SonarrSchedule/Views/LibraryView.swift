@@ -51,20 +51,56 @@ struct LibraryView: View {
                 Text("No shows in library").font(.title3).foregroundColor(.gray)
                 Spacer()
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(viewModel.sortedSeries) { show in
-                            Button(action: { selectedShow = show }) {
-                                LibraryRowView(show: show)
+                HStack(alignment: .top, spacing: 20) {
+                    // Left column: monitored shows
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Monitored")
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.5))
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                        ScrollView {
+                            LazyVStack(spacing: 10) {
+                                ForEach(viewModel.sortedSeries.filter { $0.monitored }) { show in
+                                    Button(action: { selectedShow = show }) {
+                                        LibraryRowView(show: show)
+                                    }
+                                    .buttonStyle(.card)
+                                }
                             }
-                            .buttonStyle(.card)
-                            .padding(.vertical, 4)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 24)
+                            .padding(.top, 10)
                         }
+                        .focusSection()
                     }
-                    .padding(.horizontal, 60)
-                    .padding(.bottom, 20)
+                    .frame(maxWidth: .infinity)
+
+                    // Right column: unmonitored shows
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Unmonitored")
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.5))
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                        ScrollView {
+                            LazyVStack(spacing: 10) {
+                                ForEach(viewModel.sortedSeries.filter { !$0.monitored }) { show in
+                                    Button(action: { selectedShow = show }) {
+                                        LibraryRowView(show: show)
+                                    }
+                                    .buttonStyle(.card)
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 24)
+                            .padding(.top, 10)
+                        }
+                        .focusSection()
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .focusSection()
+                .padding(.horizontal, 52)
             }
         }
         .background(Color.black.ignoresSafeArea())
@@ -85,6 +121,15 @@ struct LibraryRowView: View {
         guard let total = show.statistics?.episodeCount, total > 0,
               let have = show.statistics?.episodeFileCount else { return 0 }
         return Double(have) / Double(total)
+    }
+
+    private var cardTintColor: Color {
+        if !show.monitored { return .blue }
+        switch show.status?.lowercased() {
+        case "continuing": return .green
+        case "ended": return .red
+        default: return .gray
+        }
     }
 
     var body: some View {
@@ -160,15 +205,12 @@ struct LibraryRowView: View {
 
             Spacer()
         }
-        .padding(14)
+        .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(isFocused ? 0.12 : 0.05))
+                .fill(cardTintColor.opacity(isFocused ? 0.55 : 0.3))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(Color.white.opacity(isFocused ? 0.3 : 0.0), lineWidth: 1)
-        )
-        .padding(.vertical, 4)
+        .scaleEffect(isFocused ? 1.0 : 1.0)
+        .animation(.easeInOut(duration: 0.15), value: isFocused)
     }
 }

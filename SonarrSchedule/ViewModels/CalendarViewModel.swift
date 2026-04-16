@@ -34,9 +34,14 @@ class CalendarViewModel: ObservableObject {
     }
 
     var daysInRange: [Date] {
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday
         let today = calendar.startOfDay(for: Date())
-        return (0..<14).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
+        let weekday = calendar.component(.weekday, from: today)
+        // Calculate days since Monday (weekday: 2=Mon ... 1=Sun)
+        let daysFromMonday = (weekday + 5) % 7
+        let monday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today)!
+        return (0..<14).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
     }
 
     func events(for date: Date) -> [CalendarEvent] {

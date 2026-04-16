@@ -114,9 +114,11 @@ struct AddShowView: View {
 
     private var searchBar: some View {
         HStack(spacing: 16) {
-            TextField("Search by show name...", text: $viewModel.searchQuery)
-                .font(.callout)
-                .foregroundColor(.gray)
+            TextField(text: $viewModel.searchQuery, prompt: Text("Search by show name...")) {
+                EmptyView()
+            }
+            .font(.callout)
+            .textFieldStyle(.plain)
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
                 .onSubmit {
@@ -170,7 +172,7 @@ struct ShowSearchResultRow: View {
     private var statusColor: Color {
         switch result.status?.lowercased() {
         case "continuing": return .green
-        case "ended": return .gray
+        case "ended": return .red
         case "upcoming": return .blue
         default: return .gray
         }

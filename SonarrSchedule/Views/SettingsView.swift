@@ -20,9 +20,9 @@ struct SettingsView: View {
 
             // Fields
             VStack(spacing: 18) {
-                settingsField(label: "IP Address", placeholder: "192.168.86.200", text: $ipAddress)
-                settingsField(label: "Port", placeholder: "8989", text: $port)
-                settingsField(label: "API Key", placeholder: "Your Sonarr API key", text: $apiKey)
+                settingsField(label: "Sonarr IP Address", placeholder: "e.g. 192.168.0.50", text: $ipAddress)
+                settingsField(label: "Sonarr Port", placeholder: "Default: 8989", text: $port)
+                settingsField(label: "Sonarr API Key", placeholder: " Sonarr API key (Found in Sonarr Settings -> General)", text: $apiKey)
             }
             .padding(.horizontal, 200)
 
