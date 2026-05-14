@@ -4,6 +4,7 @@ import Combine
 @MainActor
 class CalendarViewModel: ObservableObject {
     @Published var events: [CalendarEvent] = []
+    @Published var monitoredSeriesTitles: Set<String> = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var lastRefresh: Date?
@@ -20,6 +21,7 @@ class CalendarViewModel: ObservableObject {
     }
 
     private let service = ICalService()
+    private let sonarrService = SonarrAPIService()
     private var refreshTimer: Timer?
 
     // 12 hours in seconds
@@ -54,12 +56,18 @@ class CalendarViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        async let calendarFetch = service.fetchEvents(ip: ipAddress, port: port, apiKey: apiKey)
+        async let seriesFetch = sonarrService.fetchAllSeries(ip: ipAddress, port: port, apiKey: apiKey)
+
         do {
-            let fetched = try await service.fetchEvents(ip: ipAddress, port: port, apiKey: apiKey)
-            events = fetched
+            events = try await calendarFetch
             lastRefresh = Date()
         } catch {
             errorMessage = error.localizedDescription
+        }
+
+        if let series = try? await seriesFetch {
+            monitoredSeriesTitles = Set(series.filter { $0.monitored }.map { $0.title })
         }
 
         isLoading = false

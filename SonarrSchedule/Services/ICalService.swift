@@ -19,7 +19,7 @@ actor ICalService {
     }
 
     func fetchEvents(ip: String, port: String, apiKey: String) async throws -> [CalendarEvent] {
-        let urlString = "http://\(ip):\(port)/feed/v3/calendar/Sonarr.ics?apikey=\(apiKey)"
+        let urlString = "http://\(ip):\(port)/feed/v3/calendar/Sonarr.ics?unmonitored=true&apikey=\(apiKey)"
 
         guard let url = URL(string: urlString) else {
             throw ServiceError.invalidURL
