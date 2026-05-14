@@ -4,9 +4,15 @@ struct EventCardView: View {
     let event: CalendarEvent
     let onSelect: () -> Void
     @Environment(\.isFocused) private var isFocused
+    @EnvironmentObject var calendarViewModel: CalendarViewModel
+
+    private var isMonitored: Bool {
+        calendarViewModel.monitoredSeriesTitles.contains(event.showName)
+    }
 
     private var statusColor: Color {
-        event.isConfirmed ? .green : .red
+        if !isMonitored { return .blue }
+        return event.isConfirmed ? .green : .red
     }
 
     var body: some View {
@@ -51,7 +57,7 @@ struct EventCardView: View {
                     Circle()
                         .fill(statusColor)
                         .frame(width: 6, height: 6)
-                    Text(event.isConfirmed ? "Confirmed" : "Tentative")
+                    Text(!isMonitored ? "Unmonitored" : event.isConfirmed ? "Confirmed" : "Tentative")
                         .font(.system(size: 14))
                         .foregroundColor(statusColor)
                 }

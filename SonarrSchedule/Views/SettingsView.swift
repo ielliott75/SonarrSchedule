@@ -31,7 +31,7 @@ struct SettingsView: View {
                 Text("Calendar URL")
                     .font(.caption2)
                     .foregroundColor(.gray)
-                Text("http://\(ipAddress):\(port)/feed/v3/calendar/Sonarr.ics?apikey=\(apiKey)")
+                Text("http://\(ipAddress):\(port)/feed/v3/calendar/Sonarr.ics?unmonitored=true&apikey=\(apiKey)")
                     .font(.system(size: 20))
                     .foregroundColor(.white.opacity(0.4))
                     .lineLimit(2)
