@@ -12,6 +12,9 @@ struct ShowSummaryView: View {
     @State private var isUpdating = false
     @State private var updateError: String?
     @State private var updateSuccess = false
+    @State private var showDeleteConfirm = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
 
     private let service = SonarrAPIService()
 
@@ -140,11 +143,30 @@ struct ShowSummaryView: View {
                                 .foregroundStyle(.primary)
                         }
                     }
-                    .disabled(isUpdating)
+                    .disabled(isUpdating || isDeleting)
 
                     Button("Close", action: { dismiss() })
                         .foregroundStyle(.primary)
-                        .disabled(isUpdating)
+                        .disabled(isUpdating || isDeleting)
+                }
+
+                Section {
+                    if let error = deleteError {
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                    }
+
+                    Button {
+                        showDeleteConfirm = true
+                    } label: {
+                        if isDeleting {
+                            ProgressView()
+                        } else {
+                            Label("Remove from Sonarr", systemImage: "trash")
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .disabled(isUpdating || isDeleting)
                 }
             }
             .listStyle(.grouped)
@@ -160,6 +182,14 @@ struct ShowSummaryView: View {
         .onChange(of: updateSuccess) { _, success in
             if success { dismiss() }
         }
+        .alert("Remove \(show.title)?", isPresented: $showDeleteConfirm) {
+            Button("Remove from Sonarr", role: .destructive) {
+                Task { await performDelete() }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will remove the show from Sonarr. Your video files will not be deleted.")
+        }
         .onAppear {
             monitored = show.monitored
             if let currentId = show.qualityProfileId,
@@ -167,6 +197,23 @@ struct ShowSummaryView: View {
                 selectedQualityProfileIndex = idx
             }
         }
+    }
+
+    private func performDelete() async {
+        isDeleting = true
+        deleteError = nil
+        do {
+            try await service.deleteSeries(
+                ip: calendarViewModel.ipAddress,
+                port: calendarViewModel.port,
+                apiKey: calendarViewModel.apiKey,
+                seriesId: show.id
+            )
+            dismiss()
+        } catch {
+            deleteError = error.localizedDescription
+        }
+        isDeleting = false
     }
 
     private func performUpdate() async {
