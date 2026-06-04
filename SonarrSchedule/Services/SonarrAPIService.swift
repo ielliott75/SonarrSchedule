@@ -228,6 +228,18 @@ actor SonarrAPIService {
         }
     }
 
+    func deleteSeries(ip: String, port: String, apiKey: String, seriesId: Int) async throws {
+        var request = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series/\(seriesId)?deleteFiles=false")
+        request.httpMethod = "DELETE"
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            let body = String(data: data, encoding: .utf8)
+            throw APIError.serverError(http.statusCode, body)
+        }
+    }
+
     private func extractSonarrError(from body: String) -> String? {
         guard let data = body.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
