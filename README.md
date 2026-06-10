@@ -8,8 +8,10 @@ A native tvOS app for Apple TV that brings your [Sonarr](https://sonarr.tv) medi
 
 ### TV Schedule
 - Displays a two-week calendar starting from Monday of the current week
-- Each episode card shows show name, season, episode number, network, and air time
-- Colour-coded cards: **green** for confirmed airings, **red** for tentative
+- Each episode card shows show name, season, episode number, network, air time, and status
+- Colour-coded cards: **green** for confirmed airings, **red** for tentative, **blue** for unmonitored shows
+- Includes unmonitored shows in the schedule, labelled "Unmonitored"
+- Tap any episode for full details: date, time, duration, network, and description
 - Auto-refreshes every 12 hours in the background
 
 ### Library
@@ -31,6 +33,11 @@ A native tvOS app for Apple TV that brings your [Sonarr](https://sonarr.tv) medi
 - From the Library, tap any show to open its summary
 - Update quality profile and monitored status
 - Changes are pushed directly back to Sonarr
+
+### Remove Shows
+- Remove a show from Sonarr directly from its summary view
+- Two-phase confirmation prevents accidental deletions
+- Video files are **never** deleted — only Sonarr's tracking of the show is removed
 
 ### Settings
 - Configure your Sonarr server connection: IP address, port, and API key
@@ -112,10 +119,12 @@ xcodebuild \
 
 SonarrSchedule connects to your Sonarr instance in two ways:
 
-1. **iCal feed** — fetches `http://<host>:<port>/feed/v3/calendar/Sonarr.ics?apikey=<key>` to populate the schedule calendar
-2. **REST API v3** — communicates with `/api/v3/series`, `/api/v3/series/lookup`, `/api/v3/qualityprofile`, `/api/v3/languageprofile`, and `/api/v3/rootfolder` endpoints to power the library and add-show features
+1. **iCal feed** — fetches `http://<host>:<port>/feed/v3/calendar/Sonarr.ics?unmonitored=true&apikey=<key>` to populate the schedule calendar, including unmonitored shows
+2. **REST API v3** — communicates with `/api/v3/series` (list, add, update, delete), `/api/v3/series/lookup`, `/api/v3/qualityprofile`, `/api/v3/languageprofile`, and `/api/v3/rootfolder` endpoints to power the library, add-show, edit, and remove features
 
-All network calls are made over HTTP on your local network. No data is sent to any third party.
+On every schedule refresh, the app fetches the series list in parallel with the iCal feed and cross-references show names to determine each event's monitored state.
+
+All network calls are made over HTTP on your local network (the app's App Transport Security settings permit local HTTP connections). No data is sent to any third party.
 
 ---
 

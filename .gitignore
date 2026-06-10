@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
+
+# Claude Code
+.claude/

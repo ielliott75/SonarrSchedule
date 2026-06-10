@@ -3,9 +3,20 @@ import SwiftUI
 struct EventDetailView: View {
     let event: CalendarEvent
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var calendarViewModel: CalendarViewModel
+
+    private var isMonitored: Bool {
+        calendarViewModel.monitoredSeriesTitles.contains(event.showName)
+    }
 
     private var statusColor: Color {
-        event.isConfirmed ? .green : .orange
+        if !isMonitored { return .blue }
+        return event.isConfirmed ? .green : .red
+    }
+
+    private var statusLabel: String {
+        if !isMonitored { return "Unmonitored" }
+        return event.isConfirmed ? "Confirmed" : "Tentative"
     }
 
     private var formattedDuration: String {
@@ -63,7 +74,7 @@ struct EventDetailView: View {
                     Circle()
                         .fill(statusColor)
                         .frame(width: 10, height: 10)
-                    Text(event.isConfirmed ? "Confirmed" : "Tentative")
+                    Text(statusLabel)
                         .fontWeight(.medium)
                         .foregroundColor(statusColor)
                 }
