@@ -148,7 +148,8 @@ actor SonarrAPIService {
         apiKey: String,
         seriesId: Int,
         qualityProfileId: Int,
-        monitored: Bool
+        monitored: Bool,
+        seasonMonitoring: [Int: Bool]? = nil
     ) async throws {
         // GET the full current series object
         let getRequest = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series/\(seriesId)")
@@ -161,6 +162,16 @@ actor SonarrAPIService {
 
         series["qualityProfileId"] = qualityProfileId
         series["monitored"] = monitored
+
+        if let seasonMonitoring, var seasons = series["seasons"] as? [[String: Any]] {
+            for i in seasons.indices {
+                if let number = seasons[i]["seasonNumber"] as? Int,
+                   let isMonitored = seasonMonitoring[number] {
+                    seasons[i]["monitored"] = isMonitored
+                }
+            }
+            series["seasons"] = seasons
+        }
 
         let putData = try JSONSerialization.data(withJSONObject: series)
         var putRequest = try makeRequest(ip: ip, port: port, apiKey: apiKey, path: "series/\(seriesId)")

@@ -95,6 +95,7 @@ struct LibrarySeries: Identifiable, Codable {
     let qualityProfileId: Int?
     let images: [SeriesImage]?
     let genres: [String]?
+    let seasons: [Season]?
     let statistics: SeriesStatistics?
 
     var remotePoster: String? {
