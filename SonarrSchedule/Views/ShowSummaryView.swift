@@ -15,6 +15,8 @@ struct ShowSummaryView: View {
     @State private var showDeleteConfirm = false
     @State private var isDeleting = false
     @State private var deleteError: String?
+    @State private var seasonMonitoring: [Int: Bool] = [:]
+    @State private var showSeasonPicker = false
 
     private let service = SonarrAPIService()
 
@@ -27,6 +29,19 @@ struct ShowSummaryView: View {
     private var selectedQualityProfileId: Int {
         qualityProfiles.indices.contains(selectedQualityProfileIndex)
             ? qualityProfiles[selectedQualityProfileIndex].id : show.qualityProfileId ?? 1
+    }
+
+    private var sortedSeasons: [Season] {
+        (show.seasons ?? []).sorted { $0.seasonNumber < $1.seasonNumber }
+    }
+
+    private var monitoredSeasonsSummary: String {
+        let total = sortedSeasons.count
+        guard total > 0 else { return "" }
+        let monitoredCount = sortedSeasons.filter { seasonMonitoring[$0.seasonNumber] ?? $0.monitored }.count
+        if monitoredCount == total { return "All" }
+        if monitoredCount == 0 { return "None" }
+        return "\(monitoredCount) of \(total)"
     }
 
     var body: some View {
@@ -125,6 +140,21 @@ struct ShowSummaryView: View {
                         .tint(.blue)
                         .foregroundStyle(.primary)
                         .disabled(isUpdating)
+
+                    if !sortedSeasons.isEmpty {
+                        Button {
+                            showSeasonPicker = true
+                        } label: {
+                            HStack {
+                                Text("Monitored Seasons").foregroundStyle(.primary)
+                                Spacer()
+                                Text(monitoredSeasonsSummary)
+                                    .foregroundStyle(.secondary)
+                                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                        .disabled(isUpdating || isDeleting)
+                    }
                 }
 
                 Section {
@@ -179,6 +209,9 @@ struct ShowSummaryView: View {
                 selectedIndex: $selectedQualityProfileIndex
             )
         }
+        .fullScreenCover(isPresented: $showSeasonPicker) {
+            SeasonPickerView(seasons: sortedSeasons, monitoring: $seasonMonitoring)
+        }
         .onChange(of: updateSuccess) { _, success in
             if success { dismiss() }
         }
@@ -195,6 +228,9 @@ struct ShowSummaryView: View {
             if let currentId = show.qualityProfileId,
                let idx = qualityProfiles.firstIndex(where: { $0.id == currentId }) {
                 selectedQualityProfileIndex = idx
+            }
+            for season in show.seasons ?? [] {
+                seasonMonitoring[season.seasonNumber] = season.monitored
             }
         }
     }
@@ -226,12 +262,70 @@ struct ShowSummaryView: View {
                 apiKey: calendarViewModel.apiKey,
                 seriesId: show.id,
                 qualityProfileId: selectedQualityProfileId,
-                monitored: monitored
+                monitored: monitored,
+                seasonMonitoring: seasonMonitoring.isEmpty ? nil : seasonMonitoring
             )
             updateSuccess = true
         } catch {
             updateError = error.localizedDescription
         }
         isUpdating = false
+    }
+}
+
+struct SeasonPickerView: View {
+    let seasons: [Season]
+    @Binding var monitoring: [Int: Bool]
+    @Environment(\.dismiss) private var dismiss
+
+    private var allSelected: Bool {
+        seasons.allSatisfy { monitoring[$0.seasonNumber] ?? $0.monitored }
+    }
+
+    private func seasonLabel(_ season: Season) -> String {
+        season.seasonNumber == 0 ? "Specials" : "Season \(season.seasonNumber)"
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("Monitored Seasons")
+                .font(.title2).fontWeight(.semibold)
+                .padding(.top, 60).padding(.bottom, 20)
+
+            List {
+                Button {
+                    let newValue = !allSelected
+                    for season in seasons {
+                        monitoring[season.seasonNumber] = newValue
+                    }
+                } label: {
+                    Text(allSelected ? "Deselect All" : "Select All")
+                        .foregroundStyle(.primary)
+                }
+
+                ForEach(seasons, id: \.seasonNumber) { season in
+                    Button {
+                        let current = monitoring[season.seasonNumber] ?? season.monitored
+                        monitoring[season.seasonNumber] = !current
+                    } label: {
+                        HStack {
+                            Text(seasonLabel(season))
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            if monitoring[season.seasonNumber] ?? season.monitored {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Button("OK") { dismiss() }
+                .frame(width: 200)
+                .padding(.vertical, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.ignoresSafeArea())
     }
 }

@@ -31,7 +31,7 @@ struct LibraryView: View {
             .padding(.top, 30)
             .padding(.bottom, 20)
 
-            if viewModel.isLoading {
+            if viewModel.isLoading && viewModel.series.isEmpty {
                 Spacer()
                 ProgressView("Loading Library...").font(.title3)
                 Spacer()
@@ -104,7 +104,9 @@ struct LibraryView: View {
             }
         }
         .background(Color.black.ignoresSafeArea())
-        .fullScreenCover(item: $selectedShow) { show in
+        .fullScreenCover(item: $selectedShow, onDismiss: {
+            Task { await viewModel.fetch(ip: calendarViewModel.ipAddress, port: calendarViewModel.port, apiKey: calendarViewModel.apiKey) }
+        }) { show in
             ShowSummaryView(show: show, qualityProfiles: viewModel.qualityProfiles)
         }
         .task {
